@@ -3,6 +3,7 @@ package pods
 import (
 	"errors"
 	"log"
+	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -94,6 +95,30 @@ func GetPodPhase(namespace string, podName string) (string, error) {
 	return string(pod.Status.Phase), nil
 }
 
+func getCurrentConditionDetails(conditions []apiv1.PodCondition) (string, string) {
+	var time metav1.Time = metav1.Time{}
+	var condition string
+	var reason *strings.Builder = new(strings.Builder)
+	for _, c := range conditions {
+		if time.IsZero() && c.Status == apiv1.ConditionTrue {
+			time = c.LastTransitionTime
+			condition = string(c.Type)
+			reason.WriteString(c.Reason)
+			reason.WriteString("-")
+			reason.WriteString(c.Message)
+		}
+		if time.Before(&c.LastTransitionTime) {
+			time = c.LastTransitionTime
+			condition = string(c.Type)
+			reason.Reset()
+			reason.WriteString(c.Reason)
+			reason.WriteString("-")
+			reason.WriteString(c.Message)
+		}
+	}
+	return condition, reason.String()
+}
+
 // Get status/condition of a give pod
 func GetPodStatus(namespace string, podName string) (string, error) {
 	pods := getPods(namespace)
@@ -105,17 +130,6 @@ func GetPodStatus(namespace string, podName string) (string, error) {
 		log.Println(err)
 		return "", err
 	}
-	var time metav1.Time = metav1.Time{}
-	var condition string
-	for _, c := range pod.Status.Conditions {
-		if time.IsZero() && c.Status == apiv1.ConditionTrue {
-			time = c.LastTransitionTime
-			condition = string(c.Type)
-		}
-		if time.Before(&c.LastTransitionTime) {
-			time = c.LastTransitionTime
-			condition = string(c.Type)
-		}
-	}
+	condition, _ := getCurrentConditionDetails(pod.Status.Conditions)
 	return condition, nil
 }
