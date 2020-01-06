@@ -148,3 +148,17 @@ func GetConditionReason(namespace string, podName string) (string, error) {
 	_, reason := getCurrentConditionDetails(pod.Status.Conditions)
 	return reason, nil
 }
+
+// Get timestamp when the pod was started
+func GetPodStartTime(namespace string, podName string) (string, error) {
+	pods := getPods(namespace)
+	pod, err := pods.Get(podName, metav1.GetOptions{})
+	if pod == nil {
+		return "", errors.New("Pod not present")
+	}
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	return pod.Status.StartTime.String(), nil
+}
