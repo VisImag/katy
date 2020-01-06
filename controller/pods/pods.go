@@ -133,3 +133,18 @@ func GetPodStatus(namespace string, podName string) (string, error) {
 	condition, _ := getCurrentConditionDetails(pod.Status.Conditions)
 	return condition, nil
 }
+
+// Get reason for the pod condition
+func GetConditionReason(namespace string, podName string) (string, error) {
+	pods := getPods(namespace)
+	pod, err := pods.Get(podName, metav1.GetOptions{})
+	if pod == nil {
+		return "", errors.New("Pod not present")
+	}
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	_, reason := getCurrentConditionDetails(pod.Status.Conditions)
+	return reason, nil
+}
