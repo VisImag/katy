@@ -79,3 +79,43 @@ func CheckIfReady(namespace string, podName string) (bool, error) {
 		return false, nil
 	}
 }
+
+// Get phase of a given pod
+func GetPodPhase(namespace string, podName string) (string, error) {
+	pods := getPods(namespace)
+	pod, err := pods.Get(podName, metav1.GetOptions{})
+	if pod == nil {
+		return "", errors.New("Pod not present")
+	}
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	return string(pod.Status.Phase), nil
+}
+
+// Get status/condition of a give pod
+func GetPodStatus(namespace string, podName string) (string, error) {
+	pods := getPods(namespace)
+	pod, err := pods.Get(podName, metav1.GetOptions{})
+	if pod == nil {
+		return "", errors.New("Pod not present")
+	}
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	var time metav1.Time = metav1.Time{}
+	var condition string
+	for _, c := range pod.Status.Conditions {
+		if time.IsZero() && c.Status == apiv1.ConditionTrue {
+			time = c.LastTransitionTime
+			condition = string(c.Type)
+		}
+		if time.Before(&c.LastTransitionTime) {
+			time = c.LastTransitionTime
+			condition = string(c.Type)
+		}
+	}
+	return condition, nil
+}

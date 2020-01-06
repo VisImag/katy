@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+
+	"github.com/VisImag/katy/env"
 )
 
 func main() {
-	a := "Hello World"
-	fmt.Println(a)
+	env.SetEnv()
+	fmt.Println(os.Getenv("KUBE_CONFIG_PATH"))
 }
