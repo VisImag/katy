@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/VisImag/katy/controller/pods"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -22,4 +23,10 @@ func GetKubernetesClient() *kubernetes.Clientset {
 		log.Fatalln(err)
 	}
 	return client
+}
+
+func PushKubernetesClient(client *kubernetes.Clientset) {
+
+	// Push kubernetes clientset to pod controller
+	pods.PushClientSet(client)
 }
