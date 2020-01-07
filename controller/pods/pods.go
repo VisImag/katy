@@ -2,13 +2,12 @@ package pods
 
 import (
 	"errors"
-	"log"
-	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"log"
 )
 
 var kubeClient *kubernetes.Clientset
@@ -95,28 +94,21 @@ func GetPodPhase(namespace string, podName string) (string, error) {
 	return string(pod.Status.Phase), nil
 }
 
-func getCurrentConditionDetails(conditions []apiv1.PodCondition) (string, string) {
+func getCurrentConditionDetails(conditions []apiv1.PodCondition) string {
 	var time metav1.Time = metav1.Time{}
 	var condition string
-	var reason *strings.Builder = new(strings.Builder)
 	for _, c := range conditions {
 		if time.IsZero() && c.Status == apiv1.ConditionTrue {
 			time = c.LastTransitionTime
 			condition = string(c.Type)
-			reason.WriteString(c.Reason)
-			reason.WriteString("-")
-			reason.WriteString(c.Message)
 		}
 		if time.Before(&c.LastTransitionTime) {
 			time = c.LastTransitionTime
 			condition = string(c.Type)
 			reason.Reset()
-			reason.WriteString(c.Reason)
-			reason.WriteString("-")
-			reason.WriteString(c.Message)
 		}
 	}
-	return condition, reason.String()
+	return condition
 }
 
 // Get status/condition of a give pod
@@ -130,7 +122,7 @@ func GetPodStatus(namespace string, podName string) (string, error) {
 		log.Println(err)
 		return "", err
 	}
-	condition, _ := getCurrentConditionDetails(pod.Status.Conditions)
+	condition := getCurrentConditionDetails(pod.Status.Conditions)
 	return condition, nil
 }
 
@@ -145,7 +137,7 @@ func GetConditionReason(namespace string, podName string) (string, error) {
 		log.Println(err)
 		return "", err
 	}
-	_, reason := getCurrentConditionDetails(pod.Status.Conditions)
+	reason := pod.Status.Reason + "-" + pod.Status.Message
 	return reason, nil
 }
 
