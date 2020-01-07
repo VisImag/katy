@@ -2,12 +2,13 @@ package pods
 
 import (
 	"errors"
+	"log"
+	"strconv"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"log"
 )
 
 var kubeClient *kubernetes.Clientset
@@ -105,7 +106,6 @@ func getCurrentConditionDetails(conditions []apiv1.PodCondition) string {
 		if time.Before(&c.LastTransitionTime) {
 			time = c.LastTransitionTime
 			condition = string(c.Type)
-			reason.Reset()
 		}
 	}
 	return condition
@@ -153,4 +153,25 @@ func GetPodStartTime(namespace string, podName string) (string, error) {
 		return "", err
 	}
 	return pod.Status.StartTime.String(), nil
+}
+
+/*
+	Container Status
+*/
+
+func CheckIfContainersReady(namespace string, podName string) (map[string]string, error) {
+	pods := getPods(namespace)
+	pod, err := pods.Get(podName, metav1.GetOptions{})
+	if pod == nil {
+		return nil, errors.New("Pod not present")
+	}
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	var containerStatus map[string]string = map[string]string{}
+	for _, c := range pod.Status.ContainerStatuses {
+		containerStatus[c.Image] = strconv.FormatBool(c.Ready)
+	}
+	return containerStatus, nil
 }
