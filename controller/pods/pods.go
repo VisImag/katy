@@ -159,7 +159,28 @@ func GetPodStartTime(namespace string, podName string) (string, error) {
 	Container Status
 */
 
-func CheckIfContainersReady(namespace string, podName string) (map[string]string, error) {
+// Check if the containers in a pod have passed their readiness probe
+func CheckIfContainersReady(namespace string, podName string) (bool, error) {
+	pods := getPods(namespace)
+	pod, err := pods.Get(podName, metav1.GetOptions{})
+	if pod == nil {
+		return false, errors.New("Pod not present")
+	}
+	if err != nil {
+		return false, err
+	}
+	var flag bool = true
+	for _, c := range pod.Status.ContainerStatuses {
+		if !c.Ready {
+			flag = false
+			break
+		}
+	}
+	return flag, nil
+}
+
+// Get status of each container by having a bool value against it's image name
+func GetContainersReadyStatus(namespace string, podName string) (map[string]string, error) {
 	pods := getPods(namespace)
 	pod, err := pods.Get(podName, metav1.GetOptions{})
 	if pod == nil {
