@@ -196,3 +196,21 @@ func GetContainersReadyStatus(namespace string, podName string) (map[string]stri
 	}
 	return containerStatus, nil
 }
+
+// Get number of a times containers are restarted inside a particular pod
+func GetContainerRestartCount(namespace string, podName string) (map[string]int32, error) {
+	pods := getPods(namespace)
+	pod, err := pods.Get(podName, metav1.GetOptions{})
+	if pod == nil {
+		return nil, errors.New("Pod not present")
+	}
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	var containerRestart map[string]int32 = map[string]int32{}
+	for _, c := range pod.Status.ContainerStatuses {
+		containerRestart[c.Image] = c.RestartCount
+	}
+	return containerRestart, nil
+}
